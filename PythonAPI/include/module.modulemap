@@ -1,0 +1,4 @@
+module PythonAPI [system] {
+  header "PythonAPI.h"
+  export *
+}
