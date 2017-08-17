@@ -28,8 +28,8 @@ class PythonAPITests: XCTestCase {
     }
   }
 
-  func testHello() {
-    let program = "def mydouble(num):\n\treturn num * 2;\n"
+  func testFunctionCall() {
+    let program = "def mydouble(num):\n\treturn num * 2;\n\nstringVar = 'Hello, world';\n"
     let path = "/tmp/helloworld.py"
     let f = fopen(path, "w")
     _ = program.withCString { pstr -> Int in
@@ -45,6 +45,13 @@ class PythonAPITests: XCTestCase {
       let res = PyObject_CallObject(function, args) {
       let four = PyInt_AsLong(res)
       XCTAssertEqual(four, 4)
+      if let strObj = PyObject_GetAttrString(module, "stringVar"),
+        let pstr = PyString_AsString(strObj) {
+        let strvar = String(cString: pstr)
+        print(strvar)
+      } else {
+        XCTFail("variable failed")
+      }
     } else {
       XCTFail("library import failed")
     }
@@ -54,6 +61,6 @@ class PythonAPITests: XCTestCase {
   static var allTests = [
     ("testExample", testExample),
     ("testVersion", testVersion),
-    ("testHello", testHello)
+    ("testFunctionCall", testFunctionCall)
     ]
 }
