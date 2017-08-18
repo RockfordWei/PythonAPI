@@ -28,6 +28,34 @@ class PythonAPITests: XCTestCase {
     }
   }
 
+  func testClass() {
+    let program = "class Person:\n\tdef __init__(self, name, age):\n\t\tself.name = name\n\t\tself.age = age\n\tdef intro(self):\n\t\treturn 'Name: ' + self.name + ', Age: ' + str(self.age)\n"
+    let path = "/tmp/clstest.py"
+    let f = fopen(path, "w")
+    _ = program.withCString { pstr -> Int in
+      return fwrite(pstr, 1, program.characters.count, f)
+    }
+    fclose(f)
+    PySys_SetPath(UnsafeMutablePointer<Int8>(mutating: "/tmp"))
+    if let module = PyImport_ImportModule("clstest"),
+      let personClass = PyObject_GetAttrString(module, "Person"),
+      let args = PyTuple_New(2),
+      let name = PyString_FromString("Rocky"),
+      let age = PyInt_FromLong(24),
+      PyTuple_SetItem(args, 0, name) == 0,
+      PyTuple_SetItem(args, 1, age) == 0,
+      let personObj = PyInstance_New(personClass, args, nil),
+      let introFunc = PyObject_GetAttrString(personObj, "intro"),
+      let introRes = PyObject_CallObject(introFunc, nil),
+      let intro = PyString_AsString(introRes)
+    {
+      print(String(cString: intro))
+    } else {
+      XCTFail("class variable failed")
+    }
+    unlink(path)
+  }
+
   func testBasic() {
     let program = "def mydouble(num):\n\treturn num * 2;\n\nstringVar = 'Hello, world'\nlistVar = ['rocky', 505, 2.23, 'wei', 70.2]\ndictVar = {'Name': 'Rocky', 'Age': 17, 'Class': 'Top'};\n"
     let path = "/tmp/helloworld.py"
@@ -128,6 +156,7 @@ class PythonAPITests: XCTestCase {
   static var allTests = [
     ("testExample", testExample),
     ("testVersion", testVersion),
-    ("testBasic", testBasic)
+    ("testBasic", testBasic),
+    ("testClass", testClass)
     ]
 }
