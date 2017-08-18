@@ -16,12 +16,18 @@
 //
 //===----------------------------------------------------------------------===//
 //
-import PackageDescription
 
-let package = Package(
-    name: "PerfectPython",
-    targets: [
-      Target(name: "PythonAPI", dependencies: []),
-      Target(name: "PerfectPython", dependencies: ["PythonAPI"])
-    ]
-)
+import PythonAPI
+
+open class Python {
+  public static var autoBoot: Bool {
+    get {
+      Py_Initialize()
+      return true
+    }
+  }
+
+  public static func tearDown() {
+    Py_Finalize()
+  }
+}

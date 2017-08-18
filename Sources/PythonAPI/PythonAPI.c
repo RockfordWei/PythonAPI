@@ -1,5 +1,5 @@
 //
-//  PerfectPython.swift
+//  PythonAPI.c
 //  Perfect-Python
 //
 //  Created by Rockford Wei on 2017-08-18.
@@ -16,12 +16,4 @@
 //
 //===----------------------------------------------------------------------===//
 //
-import PackageDescription
-
-let package = Package(
-    name: "PerfectPython",
-    targets: [
-      Target(name: "PythonAPI", dependencies: []),
-      Target(name: "PerfectPython", dependencies: ["PythonAPI"])
-    ]
-)
+#include <PythonAPI.h>

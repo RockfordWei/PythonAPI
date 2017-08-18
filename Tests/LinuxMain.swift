@@ -1,6 +1,6 @@
 import XCTest
-@testable import PythonAPITests
+@testable import PerfectPythonTests
 
 XCTMain([
-    testCase(PythonAPITests.allTests),
+    testCase(PerfectPythonTests.allTests),
 ])
