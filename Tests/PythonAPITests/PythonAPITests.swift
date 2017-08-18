@@ -29,7 +29,7 @@ class PythonAPITests: XCTestCase {
   }
 
   func testFunctionCall() {
-    let program = "def mydouble(num):\n\treturn num * 2;\n\nstringVar = 'Hello, world';\n"
+    let program = "def mydouble(num):\n\treturn num * 2;\n\nstringVar = 'Hello, world'\nlistVar = ['rocky', 505, 2.23, 'wei', 70.2]\n"
     let path = "/tmp/helloworld.py"
     let f = fopen(path, "w")
     _ = program.withCString { pstr -> Int in
@@ -50,7 +50,31 @@ class PythonAPITests: XCTestCase {
         let strvar = String(cString: pstr)
         print(strvar)
       } else {
-        XCTFail("variable failed")
+        XCTFail("string variable failed")
+      }
+      if let listObj = PyObject_GetAttrString(module, "listVar") {
+        let size = PyList_Size(listObj)
+        for i in 0 ..< size {
+          if let item = PyList_GetItem(listObj, i) {
+            let j = item.pointee
+            let tpName = String(cString: j.ob_type.pointee.tp_name)
+            let v: Any?
+            switch tpName {
+            case "str":
+              v = String(cString: PyString_AsString(item))
+              break
+            case "int":
+              v = PyInt_AsLong(item)
+            case "float":
+              v = PyFloat_AsDouble(item)
+            default:
+              v = nil
+            }
+            print(i, tpName, v)
+          }
+        }
+      } else {
+        XCTFail("list variable failed")
       }
     } else {
       XCTFail("library import failed")
