@@ -27,7 +27,7 @@ class PerfectPythonTests: XCTestCase {
     }
 
     override func tearDown() {
-      Python.tearDown()
+      Py_Finalize()
     }
 
     func testExample() {
@@ -42,6 +42,7 @@ class PerfectPythonTests: XCTestCase {
         let verstr = PyString_AsString(verObj),
         let _ = strstr(verstr, "2.7") {
         print(String(cString: verstr))
+        Py_DecRef(module)
       } else {
         XCTFail("version checking failed")
       }

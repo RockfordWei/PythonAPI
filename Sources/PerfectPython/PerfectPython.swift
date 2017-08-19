@@ -19,15 +19,247 @@
 
 import PythonAPI
 
-open class Python {
-  public static var autoBoot: Bool {
-    get {
-      Py_Initialize()
-      return true
+public extension String {
+  public func python() -> PyObj? {
+    if let ref = PyString_FromString(self) {
+      return PyObj(ref)
+    } else {
+      return nil
+    }
+  }
+  public init(python: PyObj) {
+    if let p = PyString_AsString(python.ref) {
+      self = String(cString: p)
+    } else {
+      self = ""
+    }
+  }
+}
+
+public extension Int {
+  public func python() -> PyObj? {
+    if let ref = PyInt_FromLong(self) {
+      return PyObj(ref)
+    } else {
+      return nil
+    }
+  }
+  public init(python: PyObj) {
+    self = PyInt_AsLong(python.ref)
+  }
+}
+
+public extension Double {
+  public func python() -> PyObj? {
+    if let ref = PyFloat_FromDouble(self) {
+      return PyObj(ref)
+    } else {
+      return nil
+    }
+  }
+  public init(python: PyObj) {
+    self = PyFloat_AsDouble(python.ref)
+  }
+}
+
+public extension Array where Element == String {
+  public func python() -> PyObj? {
+    if let list = PyList_New(self.count) {
+      for i in 0 ..< self.count {
+        if let j = self[i].python() {
+          _ = PyList_SetItem(list, i, j.ref)
+        }
+      }
+      return PyObj(list)
+    } else {
+      return nil
+    }
+  }
+  public init(python: PyObj) {
+    var list:[String] = []
+    for i in 0 ..< PyList_Size(python.ref) {
+      if let j = PyList_GetItem(python.ref, i) {
+        list.insert(String(python: PyObj(j)), at: i)
+      }
+    }
+    self = list
+  }
+}
+
+public extension Array where Element == Int {
+  public func python() -> PyObj? {
+    if let list = PyList_New(self.count) {
+      for i in 0 ..< self.count {
+        if let j = self[i].python() {
+          _ = PyList_SetItem(list, i, j.ref)
+        }
+      }
+      return PyObj(list)
+    } else {
+      return nil
+    }
+  }
+  public init(python: PyObj) {
+    var list:[Int] = []
+    for i in 0 ..< PyList_Size(python.ref) {
+      if let j = PyList_GetItem(python.ref, i) {
+        list.insert(Int(python: PyObj(j)), at: i)
+      }
+    }
+    self = list
+  }
+}
+
+public extension Array where Element == Double {
+  public func python() -> PyObj? {
+    if let list = PyList_New(self.count) {
+      for i in 0 ..< self.count {
+        if let j = self[i].python() {
+          _ = PyList_SetItem(list, i, j.ref)
+        }
+      }
+      return PyObj(list)
+    } else {
+      return nil
+    }
+  }
+  public init(python: PyObj) {
+    var list:[Double] = []
+    for i in 0 ..< PyList_Size(python.ref) {
+      if let j = PyList_GetItem(python.ref, i) {
+        list.insert(Double(python: PyObj(j)), at: i)
+      }
+    }
+    self = list
+  }
+}
+
+
+public extension Dictionary where Key == String, Value == Any {
+  public func python() -> PyObj? {
+    return try? PyObj(value: self as Any)
+  }
+  public init(python: PyObj) {
+    if python.value is [String: Any], let v = python.value as? [String:Any] {
+      self = v
+    } else {
+      self = [:]
+    }
+  }
+}
+
+open class PyObj {
+  let ref: UnsafeMutablePointer<PyObject>
+
+  public enum Exception: Error {
+    case ImportFailure
+    case ObjectFailure
+    case InvalidType
+  }
+
+  public init(path: String? = nil, `import`: String) throws {
+    if let p = path {
+      PySys_SetPath(UnsafeMutablePointer<CChar>(mutating: p))
+    }
+    if let reference = PyImport_ImportModule(`import`) {
+      ref = reference
+    } else {
+      throw Exception.ImportFailure
     }
   }
 
-  public static func tearDown() {
-    Py_Finalize()
+  public init(_ reference: UnsafeMutablePointer<PyObject>) {
+    ref = reference
+  }
+
+  public init(value: Any) throws {
+    if value is String, let v = value as? String {
+      ref = PyString_FromString(v)
+    } else if value is Int, let v = value as? Int {
+      ref = PyInt_FromLong(v)
+    } else if value is Float, let v = value as? Float {
+      ref = PyFloat_FromDouble(Double(v))
+    } else if value is Double, let v = value as? Double {
+      ref = PyFloat_FromDouble(v)
+    } else if value is [Any], let v = value as? [Any] {
+      ref = PyList_New(v.count)
+      for i in 0 ..< v.count {
+        if let j = try? PyObj(value: v[i]) {
+          _ = PyList_SetItem(ref, i, j.ref)
+        }
+      }
+    } else if value is [String: Any], let v = value as? [String: Any] {
+      ref = PyDict_New()
+      for (i, j) in v {
+        if let u = try? PyObj(value: j), let k = try? PyObj(value: i) {
+          _ = PyDict_SetItem(ref, k.ref, u.ref)
+        }
+      }
+    } else {
+      throw Exception.InvalidType
+    }
+  }
+
+  public var value: Any? {
+    let j = ref.pointee
+    let tpName = String(cString: j.ob_type.pointee.tp_name)
+    let v: Any?
+    switch tpName {
+    case "str":
+      v = String(cString: PyString_AsString(ref))
+      break
+    case "int":
+      v = PyInt_AsLong(ref)
+      break
+    case "float":
+      v = PyFloat_AsDouble(ref)
+      break
+    case "list":
+      var list: [Any?] = []
+      for i in 0 ..< PyList_Size(ref) {
+        if let j = PyList_GetItem(ref, i) {
+          let o = PyObj(j)
+          list.insert(o.value, at: i)
+        }
+      }
+      v = list
+      break
+    case "dict":
+      var dict: [String: Any?] = [:]
+      if let keys = PyDict_Keys(ref) {
+        for i in 0 ..< PyDict_Size(ref) {
+          if let key = PyList_GetItem(keys, i),
+            let keyName = PyString_AsString(key),
+            let j = PyDict_GetItem(ref, key) {
+            let k = String(cString: keyName)
+            dict[k] = PyObj(j).value
+            defer {
+              Py_DecRef(key)
+            }
+          }
+        }
+        defer {
+          Py_DecRef(keys)
+        }
+      }
+      v = dict
+    default:
+      v = nil
+    }
+    return v
+  }
+
+  public func object(_ forName: String) -> PyObj? {
+    if let reference = PyObject_GetAttrString(ref, forName) {
+      return PyObj(reference)
+    } else {
+      return nil
+    }
+  }
+
+  deinit {
+    defer {
+      Py_DecRef(ref)
+    }
   }
 }
