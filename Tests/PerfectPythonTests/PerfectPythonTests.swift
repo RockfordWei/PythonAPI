@@ -71,7 +71,7 @@ class PerfectPythonTests: XCTestCase {
         let person = personClass.construct(["rocky", 24]),
         let name = person.load("name")?.value as? String,
         let age = person.load("age")?.value as? Int,
-        let intro = person.call("intro", args: [])?.value as? String {
+        let intro = person.call("intro")?.value as? String {
           XCTAssertEqual(name, "rocky")
           XCTAssertEqual(age, 24)
           print(intro)

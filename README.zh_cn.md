@@ -1,4 +1,4 @@
-# Perfect - Python [简体中文](README.zh_CN.md)
+# Perfect - Python
 
 <p align="center">
     <a href="http://perfect.org/get-involved.html" target="_blank">
@@ -41,113 +41,113 @@
 
 
 
-This project provides an expressway to import Python 2.7 module as a Server Side Swift Library.
+本项目提供了在Swift服务器应用上直接引用Python 2.7函数库的简便方法。
 
-This package builds with Swift Package Manager and is part of the [Perfect](https://github.com/PerfectlySoft/Perfect) project, but can also run independently.
+本项目采用Swift Package Manager 软件包管理器编译，是[Perfect](https://github.com/PerfectlySoft/Perfect) 项目的一部分，但是也可以独立运行
 
-Ensure you have installed and activated the latest Swift 3.1 / 4.0 tool chain.
+在使用之前请准备好最新的Swift 3.1 / 4.0 工具链
 
-## Linux Build Note
+## Linux 编译事项
 
-Please make sure libpython2.7-dev was installed on Ubuntu 16.04:
+首先请确保 libpython2.7-dev 已经在 Ubuntu 16.04 上正确安装：
 
 ```
 $ sudo apt-get install libpython2.7-dev
 ```
 
-## MacOS Build Note
+## MacOS 编译事项
 
-Please make sure Xcode 8.3.3 / 9.0 or later version was installed.
+请确定 Xcode 8.3.3 / 9.0 以上版本已经正确安装
 
-## Quick Start
+## 快速上手
 
-Add PerfectPython dependency to your Package.swift
+首先在Package.swift中增加依存关系：
 
 ``` swift
 .Package(url: "https://github.com/PerfectlySoft/Perfect-Python.git", majorVersion: 1, minor: 0)
 ```
 
-Then import two different libraries into the swift source code:
+然后将下列头文件导入Swift源代码：
 
 ``` swift
 import PythonAPI
 import PerfectPython
 ```
 
-Before any python api calls, make sure to initialize the library by calling `Py_Initialize()` function:
+请注意在任何程序调用之前，必须调用`Py_Initialize()`函数初始化python嵌入环境：
 
 ``` swift
 Py_Initialize()
 ```
 
-### Import Python Modules
+### 导入Python函数库模块
 
-Use `PyObj` class to import python modules. In the following example, a python script `/tmp/clstest.py` has been imported into the current Swift context:
+使用 `PyObj` 类对象用于导入python模块。下列参考范例中，一个名为`/tmp/clstest.py`的脚本被动态导入到当前Swift运行环境：
 
 ``` swift
 let pymod = try PyObj(path: "/tmp", import: "clstest")
 ```
 
-### Access Python Variables
+### 访问Python变量
 
-Once imported modules, you can use `PyObj.load()` function to access a variable value, or using `PyObj.save()` to store a new value to the current python variable.
+导入模块后，您可以使用`PyObj.load()`函数加载任何一个变量；也可以反过来用 `PyObj.save()`命令保存当前变量为一个新的值。
 
-For example, if there is a variable called `stringVar` in a python script:
+比如，以下python脚本中有个叫做 `stringVar` 的字符串变量：
 
 ``` python
 stringVar = 'Hello, world'
 ```
 
-Then you can read its value in such a form:
+那么要取得这个字符串的值只需要这样做：
 
 ``` swift
 if let str = pymod.load("stringVar")?.value as? String {
 	print(str)
-	// will print it out as "Hello, world!"
+	// 会打印变量的字符串值 "Hello, world!"
 }
 ```
 
-You can also directly overwrite the value of the same variable:
+此时您还可以为该变量直接写入新的字符串值：
 
 ``` swift
 try pymod.save("stringVar", newValue: "Hola, 🇨🇳🇨🇦！")
 ```
 
 
-**NOTE** Currently, Perfect-Python supports the following data types between Swift and Python:
+**注意** 目前，Perfect-Python仅支持如下Swift / Python数据类型自动转换：
 
-Python Type|Swift Type|Remark
+Python 类型|Swift 类型|备注
 ----------|---------|-------
 int|Int|
 float|Double|
 str|String|
-list|[Any]|Recursively
-dict|[String:Any]|Recursively
+list|[Any]|递归转换
+dict|[String:Any]|递归转换
 
 
-### Call A Python Function
+### 执行Python函数
 
-Method `PyObj.call()` is available to execute function call with arguments. Consider the python code below:
+方法 `PyObj.call()` 用于带参数执行某个python函数。以如下python脚本为例：
 
 ``` python
 def mymul(num1, num2):
 	return num1 * num2
 ```
 
-Perfect-Python can wrap this call by its name as a string and the arguments as an array:
+Perfect-Python 可以用下列方法封装并调用以上函数，您所需要注意的仅仅是其函数名称以及参数。其中函数名称用字符串代替，而参数用一个数组表达：
 
 ``` swift
 if let res = pymod.call("mymul", args: [2,3])?.value as? Int {
 	print(res)
-	// the result will be 6
+	// 结果为 6
 }
 ```
 
-### Python Object Classes
+### Python类对象
 
-The same `PyObj.load()` function helps to access the python class type, however, a following method `PyObj.construct()` should be called for object instance initialization. This method also supports parameters as an array for python object class construction.
+请同样使用 `PyObj.load()` 函数用于家在Python类对象，但是注意后面一定要紧跟一个`PyObj.construct()` 用于初始化类对象实例。该方法同样支持用一个任意类型的数组作为参数进行对象构造。
 
-Assume that there is a typical python class called `Person`, which has two properties `name` and `age`, and an object method called `intro()`:
+假设如下脚本的典型python类对象 `Person`，该类有两个属性姓名`name` 和年龄`age`，还有一个名为“自我介绍”的类对象方法`intro()`:
 
 ``` python
 class Person:
@@ -159,7 +159,7 @@ class Person:
 		return 'Name: ' + self.name + ', Age: ' + str(self.age)
 ```
 
-To initialize such a class object in Swift, the first two steps look like:
+在Swift中初始化上述类对象的方法需要进行以下两步走：
 
 ``` swift
 if let personClass = pymod.load("Person"),
@@ -168,7 +168,7 @@ if let personClass = pymod.load("Person"),
   }
 ```
 
-Then you can access the properties and class methods as common variables and functions do:
+之后就可以访问类实例的属性变量和方法了，如同上文所提到的普通变量和函数调用的方法一样：
 
 ``` swift
 if let name = person.load("name")?.value as? String,
@@ -180,18 +180,16 @@ if let name = person.load("name")?.value as? String,
 
 
 
-## Issues
+## 问题报告、内容贡献和客户支持
 
-We are transitioning to using JIRA for all bugs and support related issues, therefore the GitHub issues has been disabled.
+我们目前正在过渡到使用JIRA来处理所有源代码资源合并申请、修复漏洞以及其它有关问题。因此，GitHub 的“issues”问题报告功能已经被禁用了。
 
-If you find a mistake, bug, or any other helpful suggestion you'd like to make on the docs please head over to [http://jira.perfect.org:8080/servicedesk/customer/portal/1](http://jira.perfect.org:8080/servicedesk/customer/portal/1) and raise it.
+如果您发现了问题，或者希望为改进本文提供意见和建议，[请在这里指出](http://jira.perfect.org:8080/servicedesk/customer/portal/1).
 
-A comprehensive list of open issues can be found at [http://jira.perfect.org:8080/projects/ISS/issues](http://jira.perfect.org:8080/projects/ISS/issues)
+在您开始之前，请参阅[目前待解决的问题清单](http://jira.perfect.org:8080/projects/ISS/issues).
 
+## 更多信息
+关于本项目更多内容，请参考[perfect.org](http://perfect.org).
 
-## Further Information
-For more information on the Perfect project, please visit [perfect.org](http://perfect.org).
-
-
-## Now WeChat Subscription is Available (Chinese)
+## 扫一扫 Perfect 官网微信号
 <p align=center><img src="https://raw.githubusercontent.com/PerfectExamples/Perfect-Cloudinary-ImageUploader-Demo/master/qr.png"></p>
