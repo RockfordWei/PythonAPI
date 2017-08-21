@@ -27,7 +27,7 @@ class PerfectPythonTests: XCTestCase {
     }
 
     override func tearDown() {
-      Py_Finalize()
+      //Py_Finalize()
     }
 
     func testExample() {
@@ -118,6 +118,18 @@ class PerfectPythonTests: XCTestCase {
       } else {
         XCTFail("string call failure")
       }
+      if let listObj = pymod.load("listVar"),
+        let list = listObj.value as? [Any] {
+        XCTAssertEqual(list.count, 5)
+        print(list)
+      } else {
+        XCTFail("loading list failure")
+      }
+      if let dictObj = pymod.load("dictVar"),
+        let dict = dictObj.value as? [String:Any] {
+        XCTAssertEqual(dict.count, 3)
+        print(dict)
+      }
     }catch {
       XCTFail(error.localizedDescription)
     }
@@ -178,8 +190,7 @@ class PerfectPythonTests: XCTestCase {
               } else {
                 print(i, tpName, "Unknown")
               }
-              // DO NOT RELEASE LIST ITEMS!!!
-              //Py_DecRef(item)
+              Py_DecRef(item)
             }
           }
           Py_DecRef(listObj)
@@ -219,9 +230,8 @@ class PerfectPythonTests: XCTestCase {
             }
             Py_DecRef(item)
           }
-          // DO NOT RELEASE DICTIONARY OBJECTS!!!!
-          //Py_DecRef(keys)
-          //Py_DecRef(dicObj)
+          Py_DecRef(keys)
+          Py_DecRef(dicObj)
         } else {
           XCTFail("dictionary variable failed")
         }

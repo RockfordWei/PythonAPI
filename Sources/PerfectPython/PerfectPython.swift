@@ -249,7 +249,8 @@ open class PyObj {
             let keyName = PyString_AsString(key),
             let j = PyDict_GetItem(ref, key) {
             let k = String(cString: keyName)
-            dict[k] = PyObj(j).value
+            let o = PyObj(j)
+            dict[k] = o.value
             defer {
               Py_DecRef(key)
             }
