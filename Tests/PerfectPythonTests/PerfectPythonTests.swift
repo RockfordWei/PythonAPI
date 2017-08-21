@@ -24,10 +24,25 @@ class PerfectPythonTests: XCTestCase {
 
     override func setUp() {
       Py_Initialize()
+      var program = "class Person:\n\tdef __init__(self, name, age):\n\t\tself.name = name\n\t\tself.age = age\n\tdef intro(self):\n\t\treturn 'Name: ' + self.name + ', Age: ' + str(self.age)\n"
+      var path = "/tmp/clstest.py"
+      var f = fopen(path, "w")
+      _ = program.withCString { pstr -> Int in
+        return fwrite(pstr, 1, program.characters.count, f)
+      }
+      fclose(f)
+      program = "def mymul(num1, num2):\n\treturn num1 * num2;\n\ndef mydouble(num):\n\treturn num * 2;\n\nstringVar = 'Hello, world'\nlistVar = ['rocky', 505, 2.23, 'wei', 70.2]\ndictVar = {'Name': 'Rocky', 'Age': 17, 'Class': 'Top'};\n"
+      path = "/tmp/helloworld.py"
+      f = fopen(path, "w")
+      _ = program.withCString { pstr -> Int in
+        return fwrite(pstr, 1, program.characters.count, f)
+      }
+      fclose(f)
     }
 
     override func tearDown() {
       //Py_Finalize()
+      unlink("/tmp/clstest.py")
     }
 
     func testExample() {
@@ -49,14 +64,24 @@ class PerfectPythonTests: XCTestCase {
       }
     }
 
-    func testClass() {
-      let program = "class Person:\n\tdef __init__(self, name, age):\n\t\tself.name = name\n\t\tself.age = age\n\tdef intro(self):\n\t\treturn 'Name: ' + self.name + ', Age: ' + str(self.age)\n"
-      let path = "/tmp/clstest.py"
-      let f = fopen(path, "w")
-      _ = program.withCString { pstr -> Int in
-        return fwrite(pstr, 1, program.characters.count, f)
+  func testClass2() {
+    do {
+      let pymod = try PyObj(path: "/tmp", import: "clstest")
+      if let personClass = pymod.load("Person"),
+        let person = personClass.construct(["rocky", 24]),
+        let name = person.load("name")?.value as? String,
+        let age = person.load("age")?.value as? Int,
+        let intro = person.call("intro", args: [])?.value as? String {
+          XCTAssertEqual(name, "rocky")
+          XCTAssertEqual(age, 24)
+          print(intro)
       }
-      fclose(f)
+    }catch {
+      XCTFail(error.localizedDescription)
+    }
+  }
+
+    func testClass() {
       PySys_SetPath(UnsafeMutablePointer<Int8>(mutating: "/tmp"))
       if let module = PyImport_ImportModule("clstest"),
         let personClass = PyObject_GetAttrString(module, "Person"),
@@ -82,7 +107,6 @@ class PerfectPythonTests: XCTestCase {
       } else {
         XCTFail("class variable failed")
       }
-      unlink(path)
     }
 
   func testBasic2() {
@@ -137,13 +161,6 @@ class PerfectPythonTests: XCTestCase {
   }
 
     func testBasic() {
-      let program = "def mydouble(num):\n\treturn num * 2;\n\nstringVar = 'Hello, world'\nlistVar = ['rocky', 505, 2.23, 'wei', 70.2]\ndictVar = {'Name': 'Rocky', 'Age': 17, 'Class': 'Top'};\n"
-      let path = "/tmp/helloworld.py"
-      let f = fopen(path, "w")
-      _ = program.withCString { pstr -> Int in
-        return fwrite(pstr, 1, program.characters.count, f)
-      }
-      fclose(f)
       PySys_SetPath(UnsafeMutablePointer<Int8>(mutating: "/tmp"))
       if let module = PyImport_ImportModule("helloworld"),
         let function = PyObject_GetAttrString(module, "mydouble"),
@@ -239,7 +256,6 @@ class PerfectPythonTests: XCTestCase {
       } else {
         XCTFail("library import failed")
       }
-      unlink(path)
     }
 
     static var allTests = [
@@ -247,5 +263,6 @@ class PerfectPythonTests: XCTestCase {
       ("testVersion", testVersion),
       ("testBasic", testBasic),
       ("testBasic2", testBasic2),
-      ("testClass", testClass)
+      ("testClass", testClass),
+      ("testClass2", testClass2)
       ]}

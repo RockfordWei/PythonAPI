@@ -150,6 +150,7 @@ public extension Dictionary where Key == String, Value == Any {
 
 open class PyObj {
   let ref: UnsafeMutablePointer<PyObject>
+  public var autoDealloc = true
 
   public enum Exception: Error {
     case ImportFailure
@@ -182,6 +183,7 @@ open class PyObj {
     }
     for i in 0 ..< arguments.count {
       let obj = try PyObj(value: arguments[i])
+      obj.autoDealloc = false
       guard PyTuple_SetItem(args, i, obj.ref) == 0 else {
         throw Exception.ElementInsertionFailure
       }
@@ -202,6 +204,7 @@ open class PyObj {
       ref = PyList_New(v.count)
       for i in 0 ..< v.count {
         if let j = try? PyObj(value: v[i]) {
+          j.autoDealloc = false
           _ = PyList_SetItem(ref, i, j.ref)
         }
       }
@@ -209,6 +212,8 @@ open class PyObj {
       ref = PyDict_New()
       for (i, j) in v {
         if let u = try? PyObj(value: j), let k = try? PyObj(value: i) {
+          u.autoDealloc = false
+          k.autoDealloc = false
           _ = PyDict_SetItem(ref, k.ref, u.ref)
         }
       }
@@ -261,13 +266,14 @@ open class PyObj {
         }
       }
       v = dict
+      break
     default:
       v = nil
     }
     return v
   }
 
-  public func call(_ functionName: String, args: [Any]) -> PyObj? {
+  public func call(_ functionName: String, args: [Any]? = nil) -> PyObj? {
     guard let function = PyObject_GetAttrString(ref, functionName)
       else {
         return nil
@@ -276,14 +282,26 @@ open class PyObj {
       Py_DecRef(function)
     }
     let result: UnsafeMutablePointer<PyObject>
-    if args.count < 1 {
+    if let a = args, a.count < 1 {
       result = PyObject_CallObject(function, nil)
-    } else if let tuple = try? PyObj(arguments: args)  {
+    } else if let a = args, let tuple = try? PyObj(arguments: a)  {
       result = PyObject_CallObject(function, tuple.ref)
     } else {
       return nil
     }
     return PyObj(result)
+  }
+
+  public func construct(_ arguments: [Any]? = nil) -> PyObj? {
+    var args: PyObj? = nil
+    if let b = arguments, let a = try? PyObj(arguments: b) {
+      args = a
+    }
+    if let obj = PyInstance_New(ref, args?.ref, nil) {
+      return PyObj(obj)
+    } else {
+      return nil
+    }
   }
 
   public func load(_ variableName: String) -> PyObj? {
@@ -304,7 +322,9 @@ open class PyObj {
 
   deinit {
     defer {
-      Py_DecRef(ref)
+      if autoDealloc {
+        Py_DecRef(ref)
+      }
     }
   }
 }
