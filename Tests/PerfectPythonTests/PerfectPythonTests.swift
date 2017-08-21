@@ -102,6 +102,22 @@ class PerfectPythonTests: XCTestCase {
       } else {
         XCTFail("function call failure")
       }
+      let testString = "Hola, 🇨🇳🇨🇦"
+      if let str = pymod.load("stringVar") {
+        do {
+          XCTAssertEqual(str.value as? String ?? "failed", "Hello, world")
+          try pymod.save("stringVar", newValue: testString)
+        }catch{
+          XCTFail(error.localizedDescription)
+        }
+      } else {
+        XCTFail("string call failure")
+      }
+      if let str2 = pymod.load("stringVar") {
+        XCTAssertEqual(str2.value as? String ?? "failed", testString)
+      } else {
+        XCTFail("string call failure")
+      }
     }catch {
       XCTFail(error.localizedDescription)
     }

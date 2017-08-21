@@ -157,6 +157,7 @@ open class PyObj {
     case InvalidType
     case NullArray
     case ElementInsertionFailure
+    case ValueSavingFailure
   }
 
   public init(path: String? = nil, `import`: String) throws {
@@ -284,11 +285,19 @@ open class PyObj {
     return PyObj(result)
   }
 
-  public func object(_ forName: String) -> PyObj? {
-    if let reference = PyObject_GetAttrString(ref, forName) {
+  public func load(_ variableName: String) -> PyObj? {
+    if let reference = PyObject_GetAttrString(ref, variableName) {
       return PyObj(reference)
     } else {
       return nil
+    }
+  }
+
+  public func save(_ variableName: String, newValue: Any) throws {
+    let value = try PyObj(value: newValue)
+    guard 0 == PyObject_SetAttrString(ref, variableName, value.ref) else {
+      PyErr_Print()
+      throw Exception.ValueSavingFailure
     }
   }
 
