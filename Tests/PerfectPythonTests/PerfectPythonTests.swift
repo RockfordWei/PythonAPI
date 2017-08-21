@@ -85,6 +85,29 @@ class PerfectPythonTests: XCTestCase {
       unlink(path)
     }
 
+  func testBasic2() {
+    let program = "def mymul(num1, num2):\n\treturn num1 * num2;\n\nstringVar = 'Hello, world'\nlistVar = ['rocky', 505, 2.23, 'wei', 70.2]\ndictVar = {'Name': 'Rocky', 'Age': 17, 'Class': 'Top'};\n"
+    let path = "/tmp/hola.py"
+    let f = fopen(path, "w")
+    _ = program.withCString { pstr -> Int in
+      return fwrite(pstr, 1, program.characters.count, f)
+    }
+    fclose(f)
+
+    do {
+      let pymod = try PyObj(path: "/tmp", import: "hola")
+      if let res = pymod.call("mymul", args: [2,3]),
+        let ires = res.value as? Int {
+        XCTAssertEqual(ires, 6)
+      } else {
+        XCTFail("function call failure")
+      }
+    }catch {
+      XCTFail(error.localizedDescription)
+    }
+
+  }
+
     func testBasic() {
       let program = "def mydouble(num):\n\treturn num * 2;\n\nstringVar = 'Hello, world'\nlistVar = ['rocky', 505, 2.23, 'wei', 70.2]\ndictVar = {'Name': 'Rocky', 'Age': 17, 'Class': 'Top'};\n"
       let path = "/tmp/helloworld.py"
@@ -197,5 +220,6 @@ class PerfectPythonTests: XCTestCase {
       ("testExample", testExample),
       ("testVersion", testVersion),
       ("testBasic", testBasic),
+      ("testBasic2", testBasic2),
       ("testClass", testClass)
       ]}

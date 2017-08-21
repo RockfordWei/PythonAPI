@@ -155,6 +155,8 @@ open class PyObj {
     case ImportFailure
     case ObjectFailure
     case InvalidType
+    case NullArray
+    case ElementInsertionFailure
   }
 
   public init(path: String? = nil, `import`: String) throws {
@@ -170,6 +172,20 @@ open class PyObj {
 
   public init(_ reference: UnsafeMutablePointer<PyObject>) {
     ref = reference
+  }
+
+  public init(arguments: [Any]) throws {
+    guard arguments.count > 0,
+      let args = PyTuple_New(arguments.count) else {
+      throw Exception.NullArray
+    }
+    for i in 0 ..< arguments.count {
+      let obj = try PyObj(value: arguments[i])
+      guard PyTuple_SetItem(args, i, obj.ref) == 0 else {
+        throw Exception.ElementInsertionFailure
+      }
+    }
+    ref = args
   }
 
   public init(value: Any) throws {
@@ -247,6 +263,25 @@ open class PyObj {
       v = nil
     }
     return v
+  }
+
+  public func call(_ functionName: String, args: [Any]) -> PyObj? {
+    guard let function = PyObject_GetAttrString(ref, functionName)
+      else {
+        return nil
+    }
+    defer {
+      Py_DecRef(function)
+    }
+    let result: UnsafeMutablePointer<PyObject>
+    if args.count < 1 {
+      result = PyObject_CallObject(function, nil)
+    } else if let tuple = try? PyObj(arguments: args)  {
+      result = PyObject_CallObject(function, tuple.ref)
+    } else {
+      return nil
+    }
+    return PyObj(result)
   }
 
   public func object(_ forName: String) -> PyObj? {
