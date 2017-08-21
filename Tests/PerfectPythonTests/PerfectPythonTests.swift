@@ -42,6 +42,7 @@ class PerfectPythonTests: XCTestCase {
         let verstr = PyString_AsString(verObj),
         let _ = strstr(verstr, "2.7") {
         print(String(cString: verstr))
+        Py_DecRef(verObj)
         Py_DecRef(module)
       } else {
         XCTFail("version checking failed")
@@ -70,6 +71,14 @@ class PerfectPythonTests: XCTestCase {
         let intro = PyString_AsString(introRes)
       {
         print(String(cString: intro))
+        Py_DecRef(personObj)
+        Py_DecRef(introFunc)
+        Py_DecRef(introRes)
+        Py_DecRef(args)
+        Py_DecRef(name)
+        Py_DecRef(age)
+        Py_DecRef(personClass)
+        Py_DecRef(module)
       } else {
         XCTFail("class variable failed")
       }
@@ -97,6 +106,11 @@ class PerfectPythonTests: XCTestCase {
           let pstr = PyString_AsString(strObj) {
           let strvar = String(cString: pstr)
           print(strvar)
+          Py_DecRef(function)
+          Py_DecRef(args)
+          Py_DecRef(num)
+          Py_DecRef(res)
+          Py_DecRef(strObj)
         } else {
           XCTFail("string variable failed")
         }
@@ -125,8 +139,11 @@ class PerfectPythonTests: XCTestCase {
               } else {
                 print(i, tpName, "Unknown")
               }
+              // DO NOT RELEASE LIST ITEMS!!!
+              //Py_DecRef(item)
             }
           }
+          Py_DecRef(listObj)
         } else {
           XCTFail("list variable failed")
         }
@@ -161,12 +178,15 @@ class PerfectPythonTests: XCTestCase {
             } else {
               print(keyName, tpName, "Unknown")
             }
-
+            Py_DecRef(item)
           }
+          // DO NOT RELEASE DICTIONARY OBJECTS!!!!
+          //Py_DecRef(keys)
+          //Py_DecRef(dicObj)
         } else {
           XCTFail("dictionary variable failed")
         }
-
+        Py_DecRef(module)
       } else {
         XCTFail("library import failed")
       }
